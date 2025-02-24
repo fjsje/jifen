@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>班级积分表</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            justify-content: space-around;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            background-color: #333;
+            color: white;
+            padding: 10px 0;
+            width: 100%;
+        }
+        .sidebar {
+            background-color: #f9f9f9;
+            padding: 20px;
+            width: 30%;
+        }
+        .main-content {
+            background-color: white;
+            padding: 20px;
+            width: 70%;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .score-ops {
+            margin-bottom: 20px;
+        }
+        h2, h3 {
+            margin-bottom: 10px;
+        }
+        input[type="text"], input[type="file"] {
+            width: 100%;
+            padding: 5px;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 5px 10px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>班级积分表</h1>
+    </div>
+    <div class="sidebar">
+        <h2>日志</h2>
+        <ul id="logList"></ul>
+        <h2>下载明细</h2>
+        <a href="javascript:downloadLogs()" download><button>下载日志</button></a>
+    </div>
+    <div class="main-content">
+        <div class="score-ops">
+            <h3>加分</h3>
+            <input type="text" id="addScore" placeholder="输入加分数额">
+            <button onclick="addScore()">加分</button>
+            <h3>扣分</h3>
+            <input type="text" id="subtractScore" placeholder="输入扣分数额">
+            <button onclick="subtractScore()">扣分</button>
+        </div>
+        <h2>上传数据</h2>
+        <input type="file" id="uploadFile" accept=".txt">
+        <button onclick="uploadFile()">上传数据</button>
+        <table id="scoreTable">
+            <thead>
+                <tr>
+                    <th>姓名</th>
+                    <th>积分</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- 动态生成学生行 -->
+            </tbody>
+        </table>
+    </div>
+    <script>
+        let scores = JSON.parse(localStorage.getItem('scores')) || [];
+        let logs = JSON.parse(localStorage.getItem('logs')) || [];
+
+        function fetchScores() {
+            const tableBody = document.getElementById('scoreTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
+            scores.forEach(student => {
+                const row = tableBody.insertRow();
+                const nameCell = row.insertCell(0);
+                const scoreCell = row.insertCell(1);
+                nameCell.textContent = student.name;
+                scoreCell.textContent = student.score;
+            });
+            localStorage.setItem('scores', JSON.stringify(scores));
+        }
+
+        function fetchLogs() {
+            const logList = document.getElementById('logList');
+            logList.innerHTML = '';
+            logs.forEach(log => {
+                const item = document.createElement('li');
+                item.textContent = `${log.time}: ${log.action}`;
+                logList.appendChild(item);
+            });
+            localStorage.setItem('logs', JSON.stringify(logs));
+        }
+
+        function addScore() {
+            const name = prompt("输入学生姓名");
+            const amount = parseFloat(document.getElementById('addScore').value);
+            if (name && !isNaN(amount)) {
+                updateScore(name, amount);
+            }
+        }
+
+        function subtractScore() {
+            const name = prompt("输入学生姓名");
+            const amount = parseFloat(document.getElementById('subtractScore').value);
+            if (name && !isNaN(amount)) {
+                updateScore(name, -amount);
+            }
+        }
+
+        function updateScore(name, amount) {
+            let found = false;
+            for (let i = 0; i < scores.length; i++) {
+                if (scores[i].name === name) {
+                    scores[i].score += amount;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                scores.push({ name, score: amount });
+            }
+            fetchScores();
+            fetchLogs();
+            addLog({
+                time: new Date().toISOString(),
+                action: `${amount > 0 ? '加' : '扣'} ${Math.abs(amount)} 分 ${amount > 0 ? '给' : '从'} ${name}`
+            });
+        }
+
+        function uploadFile() {
+            const fileInput = document.getElementById('uploadFile');
+            const file = fileInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const text = e.target.result;
+                    parseFile(text);
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function parseFile(text) {
+            const lines = text.split('\n');
+            const newScores = [];
+            const newLogs = [];
+            lines.forEach(line => {
+                const parts = line.split(',');
+                if (parts.length === 3) {
+                    const [name, score, time] = parts;
+                    newScores.push({ name, score: parseFloat(score) });
+                    newLogs.push({ time, action: `Updated score for ${name}` });
+                }
+            });
+            scores = newScores;
+            logs = newLogs;
+            fetchScores();
+            fetchLogs();
+        }
+
+        function downloadLogs() {
+            const logsStr = JSON.stringify(logs, null, 2);
+            const blob = new Blob([logsStr], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'detail.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function addLog(log) {
+            logs.push(log);
+            fetchLogs();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchScores();
+            fetchLogs();
+        });
+
+        window.addEventListener('beforeunload', function() {
+            localStorage.setItem('scores', JSON.stringify(scores));
+            localStorage.setItem('logs', JSON.stringify(logs));
+        });
+    </script>
+</body>
+</html>
