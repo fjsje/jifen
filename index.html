@@ -29,12 +29,16 @@
             padding: 20px;
             width: 30%;
             box-shadow: 0 0 5px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            max-height: 80vh;
         }
         .main-content {
             background-color: #fff;
             padding: 20px;
             width: 70%;
             box-shadow: 0 0 5px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            max-height: 80vh;
         }
         table {
             width: 100%;
@@ -78,6 +82,10 @@
             background-color: #4CAF50; /* Green */
             color: white;
         }
+        .log-item {
+            border-bottom: 1px solid #eee;
+            padding: 5px 0;
+        }
     </style>
 </head>
 <body>
@@ -86,7 +94,9 @@
     </div>
     <div class="sidebar">
         <h2>日志</h2>
-        <ul id="logList"></ul>
+        <ul id="logList">
+            <li class="log-item">加载中...</li>
+        </ul>
         <h2>下载明细</h2>
         <a href="javascript:downloadLogs()" download><button>下载日志</button></a>
     </div>
@@ -94,7 +104,7 @@
         <div class="score-ops">
             <h3>添加姓名</h3>
             <input type="text" id="addName" placeholder="输入姓名">
-            <button onclick="addName()">Add</button>
+            <button onclick="addName()">添加</button>
             <h3>加分</h3>
             <input type="text" id="addScore" placeholder="输入加分数额">
             <button onclick="addScore()" class="add-btn">+</button>
@@ -138,33 +148,41 @@
         }
 
         function addName() {
-            const name = document.getElementById('addName').value;
+            const name = document.getElementById('addName').value.trim();
             if (name) {
                 scores.push({ name, score: 60 });
                 document.getElementById('addName').value = '';
                 fetchScores();
+                addLog({
+                    time: new Date().toISOString(),
+                    action: `Added ${name} with initial score 60`
+                });
             }
         }
 
         function addScore() {
             const amount = parseFloat(document.getElementById('addScore').value);
-            if (amount) {
+            if (!isNaN(amount)) {
                 const name = prompt("输入学生姓名");
                 if (name) {
                     addScoreTo(name, true, amount);
                 }
                 document.getElementById('addScore').value = '';
+            } else {
+                alert("请输入有效的加分数额");
             }
         }
 
         function subtractScore() {
             const amount = parseFloat(document.getElementById('subtractScore').value);
-            if (amount) {
+            if (!isNaN(amount)) {
                 const name = prompt("输入学生姓名");
                 if (name) {
                     addScoreTo(name, false, amount);
                 }
                 document.getElementById('subtractScore').value = '';
+            } else {
+                alert("请输入有效的扣分数额");
             }
         }
 
@@ -173,23 +191,22 @@
             for (let i = 0; i < scores.length; i++) {
                 if (scores[i].name === name) {
                     if (isAdd) {
-                        scores[i].score += amount;
+                        scores[i].score = parseFloat(scores[i].score) + amount;
                     } else {
-                        scores[i].score -= amount;
+                        scores[i].score = parseFloat(scores[i].score) - amount;
                     }
                     found = true;
                     break;
                 }
             }
-            if (!found && isAdd) {
-                scores.push({ name, score: amount });
-            } else if (!found && !isAdd) {
-                scores.push({ name, score: -amount });
+            if (!found) {
+                alert("未找到该姓名，请先添加姓名");
+                return;
             }
             fetchScores();
             addLog({
                 time: new Date().toISOString(),
-                action: `${isAdd ? '加' : '扣'} ${Math.abs(amount)} 分 ${isAdd ? '给' : '从'} ${name}`
+                action: `${isAdd ? '加' : '扣'} ${amount} 分 ${isAdd ? '给' : '从'} ${name}`
             });
         }
 
@@ -243,8 +260,9 @@
         function fetchLogs() {
             const logList = document.getElementById('logList');
             logList.innerHTML = '';
-            logs.forEach(log => {
+            logs.forEach((log, index) => {
                 const item = document.createElement('li');
+                item.className = 'log-item';
                 item.textContent = `${log.time}: ${log.action}`;
                 logList.appendChild(item);
             });
