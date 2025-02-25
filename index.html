@@ -131,6 +131,9 @@
     <script>
         let scores = JSON.parse(localStorage.getItem('scores')) || [];
         let logs = JSON.parse(localStorage.getItem('logs')) || [];
+        let isPasswordVerified = false; // 密码验证状态
+
+        const correctPassword = "Hsdefzcz"; // 正确密码
 
         function fetchScores() {
             const tableBody = document.getElementById('scoreTable').getElementsByTagName('tbody')[0];
@@ -142,7 +145,10 @@
                 const actionCell = row.insertCell(2);
                 nameCell.textContent = student.name;
                 scoreCell.textContent = student.score;
-                actionCell.innerHTML = `<button onclick="addScoreTo('${student.name}', true)" class="add-btn">+</button> <button onclick="addScoreTo('${student.name}', false)" class="subtract-btn">-</button>`;
+                actionCell.innerHTML = `
+                    <button onclick="addScoreTo('${student.name}', true, 10)" class="add-btn">+</button>
+                    <button onclick="addScoreTo('${student.name}', false, 10)" class="subtract-btn">-</button>
+                `;
             });
             localStorage.setItem('scores', JSON.stringify(scores));
         }
@@ -187,6 +193,25 @@
         }
 
         function addScoreTo(name, isAdd, amount) {
+            if (!isPasswordVerified) {
+                const password = prompt("请输入密码 (Hsdefzcz)：");
+                if (password === correctPassword) {
+                    isPasswordVerified = true;
+                } else {
+                    const note = prompt("密码错误，请输入备注：");
+                    if (!note) {
+                        alert("操作已取消");
+                        return;
+                    }
+                    addLog({
+                        time: new Date().toISOString(),
+                        action: `${isAdd ? '加' : '扣'} ${amount} 分 ${isAdd ? '给' : '从'} ${name}，备注：${note}`
+                    });
+                    alert("操作成功，但密码错误，已记录备注");
+                    return;
+                }
+            }
+
             let found = false;
             for (let i = 0; i < scores.length; i++) {
                 if (scores[i].name === name) {
