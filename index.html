@@ -196,7 +196,7 @@
         function addScoreTo(name, isAdd, amount) {
             if (!isPasswordVerified) {
                 if (!isPasswordIncorrect) {
-                    const password = prompt("请输入密码：");
+                    const password = prompt("请输入密码 ");
                     if (password === correctPassword) {
                         isPasswordVerified = true;
                     } else {
@@ -211,6 +211,7 @@
                             action: `${isAdd ? '加' : '扣'} ${amount} 分 ${isAdd ? '给' : '从'} ${name}，备注：${note}`
                         });
                         alert("操作成功，但密码错误，已记录备注");
+                        updateScore(name, isAdd, amount);
                         return;
                     }
                 } else {
@@ -224,10 +225,19 @@
                         action: `${isAdd ? '加' : '扣'} ${amount} 分 ${isAdd ? '给' : '从'} ${name}，备注：${note}`
                     });
                     alert("操作成功，但密码错误，已记录备注");
+                    updateScore(name, isAdd, amount);
                     return;
                 }
             }
 
+            updateScore(name, isAdd, amount);
+            addLog({
+                time: new Date().toISOString(),
+                action: `${isAdd ? '加' : '扣'} ${amount} 分 ${isAdd ? '给' : '从'} ${name}`
+            });
+        }
+
+        function updateScore(name, isAdd, amount) {
             let found = false;
             for (let i = 0; i < scores.length; i++) {
                 if (scores[i].name === name) {
@@ -245,10 +255,6 @@
                 return;
             }
             fetchScores();
-            addLog({
-                time: new Date().toISOString(),
-                action: `${isAdd ? '加' : '扣'} ${amount} 分 ${isAdd ? '给' : '从'} ${name}`
-            });
         }
 
         function uploadFile() {
