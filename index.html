@@ -132,6 +132,7 @@
         let scores = JSON.parse(localStorage.getItem('scores')) || [];
         let logs = JSON.parse(localStorage.getItem('logs')) || [];
         let isPasswordVerified = false; // 密码验证状态
+        let isPasswordIncorrect = false; // 密码错误状态
 
         const correctPassword = "Hsdefzcz"; // 正确密码
 
@@ -193,11 +194,12 @@
         }
 
         function addScoreTo(name, isAdd, amount) {
-            if (!isPasswordVerified) {
-                const password = prompt("请输入密码：");
+            if (!isPasswordVerified && !isPasswordIncorrect) {
+                const password = prompt("请输入密码");
                 if (password === correctPassword) {
                     isPasswordVerified = true;
                 } else {
+                    isPasswordIncorrect = true;
                     const note = prompt("密码错误，请输入备注：");
                     if (!note) {
                         alert("操作已取消");
