@@ -99,6 +99,8 @@
         </ul>
         <h2>下载明细</h2>
         <a href="javascript:downloadLogs()" download><button>下载日志</button></a>
+        <h2>查看排名</h2>
+        <a href="ranking.html"><button>查看排名</button></a>
     </div>
     <div class="main-content">
         <div class="score-ops">
@@ -196,7 +198,7 @@
         function addScoreTo(name, isAdd, amount) {
             if (!isPasswordVerified) {
                 if (!isPasswordIncorrect) {
-                    const password = prompt("请输入密码：");
+                    const password = prompt("请输入密码 ：");
                     if (password === correctPassword) {
                         isPasswordVerified = true;
                     } else {
