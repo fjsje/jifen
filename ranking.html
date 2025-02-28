@@ -50,12 +50,21 @@
             background-color: #f44336; /* Red */
             color: white;
         }
+        input[type="number"] {
+            width: 100px;
+            padding: 5px;
+            margin-right: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>班级积分排名</h1>
         <div>
+            <label for="days">近几天排名：</label>
+            <input type="number" id="days" min="1" value="7">
             <button onclick="fetchRanking()" class="sort-btn">获取排名</button>
             <button onclick="toggleOrder()" class="view-btn">切换排序方式</button>
         </div>
@@ -74,49 +83,68 @@
     </div>
     <script>
         let scores = [];
+        let logs = [];
         let isAscending = true; // 默认正序
 
         function fetchRanking() {
-            // 从index.html获取数据
-            fetch('index.html')
-                .then(response => response.json())
-                .then(data => {
-                    scores = data;
-                    updateRankingTable();
-                })
-                .catch(error => console.error('Error fetching data:', error));
+            const days = parseInt(document.getElementById('days').value);
+            if (isNaN(days) || days < 1) {
+                alert("请输入有效的天数");
+                return;
+            }
+
+            // 从localStorage获取数据
+            scores = JSON.parse(localStorage.getItem('scores')) || [];
+            logs = JSON.parse(localStorage.getItem('logs')) || [];
+
+            // 过滤近n天的加分记录
+            const filteredLogs = logs.filter(log => {
+                const logDate = new Date(log.time);
+                const currentDate = new Date();
+                const diffDays = Math.floor((currentDate - logDate) / (1000 * 60 * 60 * 24));
+                return diffDays <= days && log.action.includes('加');
+            });
+
+            // 计算每个学生的加分总和
+            const scoreMap = new Map();
+            filteredLogs.forEach(log => {
+                const name = log.action.split(' ')[2];
+                if (!scoreMap.has(name)) {
+                    scoreMap.set(name, 0);
+                }
+                scoreMap.set(name, scoreMap.get(name) + parseFloat(log.action.split(' ')[1]));
+            });
+
+            // 转换为数组并排序
+            const rankingData = Array.from(scoreMap.entries()).map(([name, score]) => ({ name, score }));
+            rankingData.sort((a, b) => isAscending ? a.score - b.score : b.score - a.score);
+
+            // 更新表格
+            updateRankingTable(rankingData);
         }
 
-        function updateRankingTable() {
+        function updateRankingTable(data) {
             const tableBody = document.getElementById('rankingTable').getElementsByTagName('tbody')[0];
             tableBody.innerHTML = '';
 
-            // 排序
-            scores.sort((a, b) => {
-                return isAscending ? a.score - b.score : b.score - a.score;
-            });
-
-            scores.forEach((student, index) => {
+            data.forEach((student, index) => {
                 const row = tableBody.insertRow();
                 const rankCell = row.insertCell(0);
                 const nameCell = row.insertCell(1);
                 const scoreCell = row.insertCell(2);
                 rankCell.textContent = index + 1;
                 nameCell.textContent = student.name;
-                scoreCell.textContent = student.score;
+                scoreCell.textContent = student.score.toFixed(2);
             });
         }
 
         function toggleOrder() {
             isAscending = !isAscending;
-            updateRankingTable();
+            fetchRanking();
         }
 
-        // 模拟从index.html获取数据
-        // 实际应用中应从后端API获取数据
-        fetch('index.html').then(response => response.json()).then(data => {
-            scores = data;
-        });
+        // 初始化
+        fetchRanking();
     </script>
 </body>
 </html>
